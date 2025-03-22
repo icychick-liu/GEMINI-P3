@@ -1,0 +1,14 @@
+services:
+  p3-gemini:
+    image: gemini-p3-gemini:latest    # 使用现有的最新镜像，而不是build
+    container_name: p3-gemini
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - ./outputs:/app/outputs
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
