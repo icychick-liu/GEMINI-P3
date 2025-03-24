@@ -9,7 +9,6 @@ import os
 from datetime import datetime
 from chat_multi_turn import MultiTurnImageChat
 
-# 本地测试用，调用本地代理
 # os.environ["http_proxy"] = "http://127.0.0.1:7897"
 # os.environ["https_proxy"] = "http://127.0.0.1:7897"
 
@@ -28,7 +27,7 @@ app.mount("/images", StaticFiles(directory=OUTPUT_DIR), name="images")
 
 @app.post("/generate-image")
 async def generate_image(
-    file: Optional[UploadFile] = File(None),
+    files: List[UploadFile] = File(None),
     prompt: str = Form(...),
     topic_id: str = Form(...)
 ):
@@ -43,12 +42,16 @@ async def generate_image(
         chat = chat_sessions[topic_id]
         
         # 如果上传了新图片，则处理新图片
-        if file:
-            input_filename = f"{UPLOAD_DIR}/input_{timestamp}.jpg"
-            with open(input_filename, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
-            chat.upload_image(input_filename)
-            chat.add_user_message(prompt, chat.files[-1].uri)
+        if files:
+            input_filenames = []
+            for i, file in enumerate(files):
+                input_filename = f"{UPLOAD_DIR}/input_{timestamp}_{i}.jpg"
+                with open(input_filename, "wb") as buffer:
+                    shutil.copyfileobj(file.file, buffer)
+                input_filenames.append(input_filename)
+            
+            chat.upload_images(input_filenames)
+            chat.add_user_message(prompt, [chat.files[-i].uri for i in range(len(files), 0, -1)])
         else:
             # 如果没有上传新图片，直接添加用户消息
             chat.add_user_message(prompt)
