@@ -27,12 +27,35 @@ class MultiTurnImageChat:
         self.conversation_history: List[types.Content] = []
         self.files = []
         
-    def upload_image(self, image_path: str) -> None:
-        """上传新图片到对话"""
-        # 上传图片文件并保存到文件列表中
-        file = self.client.files.upload(file=image_path)
-        self.files.append(file)
+    def upload_images(self, image_paths: List[str]) -> None:
+        """上传多张图片到对话"""
+        for image_path in image_paths:
+            file = self.client.files.upload(file=image_path)
+            self.files.append(file)
     
+    def add_user_message(self, text: str, image_uris: Optional[List[str]] = None) -> None:
+        """添加用户消息到对话历史"""
+        parts = []
+        if image_uris:
+            # 如果提供了图片URI列表，添加所有图片部件
+            for i, uri in enumerate(image_uris):
+                parts.append(
+                    types.Part.from_uri(
+                        file_uri=uri,
+                        mime_type=self.files[-(len(image_uris)-i)].mime_type,
+                    )
+                )
+        # 添加文本部件
+        parts.append(types.Part.from_text(text=text))
+        
+        # 将用户消息添加到对话历史
+        self.conversation_history.append(
+            types.Content(
+                role="user",
+                parts=parts
+            )
+        )
+        
     def _process_model_response_async(self, data: bytes, mime_type: str, output_filename: str) -> None:
         """异步处理模型响应：上传图片并更新对话历史"""
         try:
@@ -55,29 +78,6 @@ class MultiTurnImageChat:
             print(f"图片已上传并添加到对话历史")
         except Exception as e:
             print(f"处理模型响应时出错: {e}")
-        
-    def add_user_message(self, text: str, image_uri: Optional[str] = None) -> None:
-        """添加用户消息到对话历史"""
-        # 创建消息部件列表
-        parts = []
-        if image_uri:
-            # 如果提供了图片URI，添加图片部件
-            parts.append(
-                types.Part.from_uri(
-                    file_uri=image_uri,
-                    mime_type=self.files[-1].mime_type,
-                )
-            )
-        # 添加文本部件
-        parts.append(types.Part.from_text(text=text))
-        
-        # 将用户消息添加到对话历史
-        self.conversation_history.append(
-            types.Content(
-                role="user",
-                parts=parts
-            )
-        )
         
     def add_model_response(self, data: bytes, mime_type: str, output_filename: str) -> None:
         """添加模型响应到对话历史"""
