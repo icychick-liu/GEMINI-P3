@@ -3,15 +3,16 @@ import requests
 def generate_image(
     prompt: str,
     topic_id: str,
-    image_path: str = None,
+    image_paths: List[str] = None,
     api_url: str = "http://127.0.0.1:8000/generate-image"
 ):
     # 准备数据
-    files = {}
-    if image_path:
-        files = {
-            'file': ('image.jpg', open(image_path, 'rb'), 'image/jpeg')
-        }
+    files = []
+    if image_paths:
+        files = [
+            ('files', (f'image_{i}.jpg', open(image_path, 'rb'), 'image/jpeg'))
+            for i, image_path in enumerate(image_paths)
+        ]
     
     data = {
         'prompt': prompt,
@@ -38,9 +39,9 @@ def generate_image(
 
 # 使用示例
 if __name__ == "__main__":
-    # 第一轮对话：上传初始图片
+    # 第一轮对话：上传多张初始图片
     result = generate_image(
-        prompt="还是把围巾颜色换成黄色吧",
-        topic_id="topic_20250321_082250",
-        # image_path="dog11.jpg"
+        prompt="调换一下这两张图片中的小狗的角色，以第一张图片为输出图片",
+        topic_id="topic_20250321_082256",
+        image_paths=["炒锅.jpg", "女模特.jpg"]
     )
